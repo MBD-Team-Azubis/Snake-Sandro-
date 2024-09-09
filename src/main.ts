@@ -1,169 +1,100 @@
-import "./style.css";
+import "./style_sheet.css";
 
-const playground = <HTMLElement>document.getElementById("playground");
-const output = <HTMLElement>document.getElementById("output");
-const divarr: Array<HTMLElement> = [];
-const fruit = document.createElement("div");
-const size: number = 15;
-const playerlength: Array<HTMLElement> = [];
-const spawn = Math.round((size * size) / 2);
-let points: number = 0;
-let speedmodifier: number = 1;
-playground.setAttribute(
+const mapsize = 15;
+const snake: { x: number; y: number }[] = [{ x: 1, y: 1 }];
+const food: { x: number; y: number } = { x: -1, y: -1 };
+
+const playground = <HTMLDivElement>document.getElementById("playground");
+playground.setAttribute("style", `display:flex;flex-wrap:wrap;`);
+const tile = 500 / mapsize;
+const speed = 1000 / 60;
+
+//one time map render
+function mapRender() {
+  for (let i = 0; i < mapsize * mapsize; i++) {
+    const div = document.createElement("div");
+    playground.appendChild(div);
+  }
+}
+
+//playerdiv creation
+const snakeDiv = document.createElement("snake");
+// position define, tile size * snake y or x + body margin
+snakeDiv.setAttribute(
   "style",
-  `display:grid; grid-template-columns: repeat(${size.toString()}, 1fr); width: 500px; height: 500px`
+  `position: absolute;top: calc(${tile.toString()}px * ${snake[
+    snake.length - 1
+  ].y.toString()} + 8px);left: calc(${tile.toString()}px * ${snake[
+    snake.length - 1
+  ].x.toString()} + 8px)`
 );
+playground.appendChild(snakeDiv);
 
-for (let i = 0; i < size * size; i++) {
-  const div = document.createElement("div");
-  div.setAttribute("id", i.toString());
-  div.setAttribute("style", "display:grid");
-  divarr.push(div);
-  playground.appendChild(div);
-}
-
-const player = document.createElement("div");
-player.setAttribute("id", "player");
-divarr[spawn].appendChild(player);
-
-if (player.parentElement) {
-  playerlength.push(player.parentElement);
-}
-function randomIntFromInterval(min: number, max: number) {
-  // min and max included
-  return Math.floor(Math.random() * (max - min + 1) + min);
-}
-
-// Input/Key tracking
-let n: number = spawn;
-let a: string = "";
-let b: { code: string } = { code: "KeyS" };
-//to implement: repeat input untill new input for constant movement// replace empty return with death states
-function logKey(e: { code: string }) {
-  a = e.code;
-  b = e;
-  if (parseInt(divarr[n].id) >= size * size - size && a === "KeyS") {
-    window.location.reload();
-    alert("gameover");
-
-    return;
-  }
-  if (parseInt(divarr[n].id) <= size - 1 && a === "KeyW") {
-    window.location.reload();
-    alert("gameover");
-
-    return;
-  }
-  for (let i = 0; i < size; i++) {
-    if (parseInt(divarr[n].id) === size - 1 + i * size && a === "KeyD") {
-      window.location.reload();
-      alert("gameover");
-
-      return;
-    }
-    if (parseInt(divarr[n].id) === 0 + i * size && a === "KeyA") {
-      window.location.reload();
-      alert("gameover");
-
-      return;
-    }
-  }
-  if (a === "KeyW") {
-    n = n - size;
-    //move up
-  } else if (a === "KeyS") {
-    n = n + size;
-    //move down
-  } else if (a === "KeyA") {
-    n = n - 1;
-    //move left
-  } else if (a === "KeyD") {
-    n = n + 1;
-    //move right
-  }
-  divarr[n].appendChild(player);
-  if (EatFruit(player, fruit)) {
-    SpawnFruit();
-    if (player.parentElement) {
-      playerlength.push(player.parentElement);
-      return;
-    }
-  }
-  if (player.parentElement) {
-    playerlength.push(player.parentElement);
-  }
-  for (let i = 0; i < playerlength.length; i++) {
-    playerlength[i].setAttribute("style", "background-color: rgb(3, 63, 106)");
-  }
-  playerlength[0].removeAttribute("style");
-  playerlength[0].setAttribute("style", "display:grid");
-  playerlength.shift();
-  detectOverlap();
-  console.log(player.parentElement);
-  console.log(playerlength);
-}
-
-addEventListener("keydown", logKey);
-
-function SpawnFruit() {
-  let randint = randomIntFromInterval(0, size * size - 1);
-  while (playerlength.includes(divarr[randint])) {
-    randint = randomIntFromInterval(0, size * size - 1);
-  }
-  fruit.setAttribute("id", "fruit");
-  fruit.setAttribute(
+function renderInteractibles() {
+  addEventListener("keydown", input);
+  // position updates, tile size * snake y or x + body margin
+  snakeDiv.setAttribute(
     "style",
-    "height:50%; width:50%; background-color:red;align-self:center;justify-self:center; border-radius:50%;"
+    `position: absolute;top: calc(${tile.toString()}px * ${snake[
+      snake.length - 1
+    ].y.toString()} + 8px);left: calc(${tile.toString()}px * ${snake[
+      snake.length - 1
+    ].x.toString()} + 8px)`
   );
-  divarr[randint].appendChild(fruit);
-  return;
 }
 
-SpawnFruit();
+//   const foodDiv = document.createElement("div");
+//   playground.appendChild(foodDiv);
 
-function EatFruit(c: HTMLDivElement, d: HTMLDivElement) {
-  if (c.parentElement && d.parentElement) {
-    if (c.parentElement.id === d.parentElement.id) {
-      points += 10 * playerlength.length;
-      if (points >= 500 && points < 2000) {
-        clearInterval(interval);
-        speedmodifier = 2;
-        interval = startInterval(speedmodifier);
-      } else if (points >= 2000 && points < 4000) {
-        clearInterval(interval);
-        speedmodifier = 4;
-        interval = startInterval(speedmodifier);
-      } else if (points >= 4000 && points < 8000) {
-        clearInterval(interval);
-        speedmodifier = 6;
-        interval = startInterval(speedmodifier);
-      } else if (points >= 8000) {
-        clearInterval(interval);
-        speedmodifier = 8;
-        interval = startInterval(speedmodifier);
-      }
-      output.innerHTML = points.toString();
-      return d.parentElement.removeChild(d);
+function input(keycode: KeyboardEvent) {
+  //input
+  switch (keycode.key.toLowerCase()) {
+    case "w":
+      snake.push({
+        x: snake[snake.length - 1].x,
+        y: snake[snake.length - 1].y - 1,
+      });
+      break;
+    case "s":
+      snake.push({
+        x: snake[snake.length - 1].x,
+        y: snake[snake.length - 1].y + 1,
+      });
+      break;
+    case "a":
+      snake.push({
+        x: snake[snake.length - 1].x - 1,
+        y: snake[snake.length - 1].y,
+      });
+      break;
+    case "d":
+      snake.push({
+        x: snake[snake.length - 1].x + 1,
+        y: snake[snake.length - 1].y,
+      });
+      break;
+  }
+  //map collision
+  if (
+    snake[snake.length - 1].y < 0 ||
+    snake[snake.length - 1].x < 0 ||
+    snake[snake.length - 1].y > mapsize - 1 ||
+    snake[snake.length - 1].x > mapsize - 1
+  ) {
+    window.location.reload();
+    alert("gameover");
+  }
+  //player self collision
+  for (let i = 0; i < snake.length - 2; i++) {
+    if (snake[snake.length - 1] === snake[i]) {
+      window.location.reload();
+      alert("gameover");
     }
   }
 }
 
-function detectOverlap() {
-  for (let i = 0; i < playerlength.length - 1; i++) {
-    if (player.parentElement) {
-      if (player.parentElement.id === playerlength[i].id) {
-        window.location.reload();
-        alert("gameover");
-        return;
-      }
-    }
-  }
-}
-
-function startInterval(l: number) {
-  const interval = setInterval(() => {
-    logKey(b);
-  }, 2000 / l);
-  return interval;
-}
-let interval = startInterval(speedmodifier);
+//game execution
+mapRender();
+setInterval(() => {
+  renderInteractibles();
+}, speed);
